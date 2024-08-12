@@ -52,7 +52,7 @@ def open_camera():
         print('\nOpened Device: ' + device.DisplayName() + '\n')
             
         # Get the node_map of the RemoteDevice
-        remote_device_node_map = device.RemoteDevice().node_maps()[0]
+        remote_device_node_map = device.RemoteDevice().NodeMaps()[0]
         
         return True, device, remote_device_node_map
     except Exception as e:
@@ -137,11 +137,11 @@ def set_trigger_parameters(remote_device_node_map):
 
 def prepare_acquisition(device):
     try:
-        data_streams = device.data_streams()
+        data_streams = device.DataStreams()
         if data_streams.empty():
             print('ERROR! No data streams available!')
             return False, None
-        data_stream = device.data_streams()[0].Opendata_stream()
+        data_stream = device.DataStreams()[0].OpenDataStream()
         return True, data_stream
     except Exception as e:
         print("\nEXCEPTION: " + str(e))
@@ -151,7 +151,7 @@ def prepare_acquisition(device):
 def alloc_and_announce_buffers(data_stream, remote_device_node_map):
     try:
         # Flush queue and prepare all buffers for revoking
-        data_stream.Flush(ids_peak.data_streamFlushMode_DiscardAll)
+        data_stream.Flush(ids_peak.DataStreamFlushMode_DiscardAll)
         # Clear all old buffers
         for buffer in data_stream.AnnouncedBuffers():
             data_stream.RevokeBuffer(buffer)
@@ -192,7 +192,7 @@ def acquire_and_save(remote_device_node_map, data_stream):
         raw_image = ids_ipl_extension.BufferToImage(buffer)
         mono_image = raw_image.ConvertTo(ids_ipl.PixelFormatName_Mono12)
         data_stream.QueueBuffer(buffer)
-        filename = "C:\\Users\\marcinmarzejon\\" + str(datetime.now().strftime("%d-%m-%Y_%H:%M:%S")) + ".png"
+        filename = "C:\\Users\\marcinmarzejon\\" + str(datetime.now().strftime("%d-%m-%Y_%H-%M-%S")) + ".png"
         ids_ipl.ImageWriter.Write(filename, mono_image)
         return True
     except Exception as e:
@@ -216,14 +216,14 @@ def main():
         # get exposure time
         print(f'Exposure time: {get_exposure_time(my_remote_device_node_map)}')
         # set exposure time
-        set_exposure_time(my_remote_device_node_map, 6000)
+        # set_exposure_time(my_remote_device_node_map, 6000)
         
         # ADC Gain Correction
         set_adc_gain_correction(my_remote_device_node_map, True)
         # get gain value
         print(f'Gain: {get_gain(my_remote_device_node_map)}')
         # set gain to 1.0
-        set_gain(my_remote_device_node_map, 1.0)
+        # set_gain(my_remote_device_node_map, 1.0)
         
         # get fps
         print(f'FPS: {get_fps(my_remote_device_node_map)}')
@@ -244,7 +244,7 @@ def main():
         if not start_acquisition(my_data_stream, my_remote_device_node_map):
             sys.exit(-4)
         
-        # acquire and save an image
+        # # acquire and save an image
         if not acquire_and_save(my_remote_device_node_map, my_data_stream):
             sys.exit(-5)
                
