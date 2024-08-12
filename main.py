@@ -37,10 +37,6 @@ if __name__ == '__main__':
 
     try:
         # DEVICES INIT
-        # # camera
-        # MyCamId, MyCamAllMode = parse_args()
-        # print(get_frame_rate_(MyCamId))
-
         # stepper motor
         MyStage = kdc101_create_dev('27601295')
         kdc101_init(MyStage, '27601295', homing=True, settings_name='MTS25/M-Z8')
@@ -48,18 +44,42 @@ if __name__ == '__main__':
         kdc101_get_curr_pos(MyStage, True)
         time.sleep(1)
 
-        # FOR LOOP - EXPERIMENT
+        # camera
+        ids_peak.Library.Initialize()
+        # open camera
+        status, my_device, my_remote_device_node_map = open_camera()
+        # set default parameters - binning, flipping etc
+        set_default_parameters(my_remote_device_node_map)
+        # set exposure time
+        set_exposure_time(my_remote_device_node_map, 6000)
+        # set gain to 1.0
+        set_gain(my_remote_device_node_map, 1.0)
+        # set Trigger parameters
+        set_trigger_parameters(my_remote_device_node_map)
+        status, my_data_stream = prepare_acquisition(my_device)
+        if not status:
+            sys.exit(-2)
+        if not alloc_and_announce_buffers(my_data_stream, my_remote_device_node_map):
+            sys.exit(-3)
+        # start acquisition
+        if not start_acquisition(my_data_stream, my_remote_device_node_map):
+            sys.exit(-4)
+
+            # FOR LOOP - EXPERIMENT
         for i in range(N):
             kdc101_move_to_rel_pos(MyStage, step, True)
             kdc101_get_curr_pos(MyStage, True)
             time.sleep(1)
-            # save_frame_(MyCamId)
-                # CODE HERE!!!!
+            # acquire and save an image
+            if not acquire_and_save(my_remote_device_node_map, my_data_stream):
+                sys.exit(-5)
 
         # CLOSE DEVICES -----------------------------
         kdc101_close(MyStage)
+        my_device = None
+        del my_device
 
     except Exception as ex:
         print(f"An error occurred!!: {ex}")
     finally:
-        kdc101_close(MyStage)
+        ids_peak.Library.Close()
