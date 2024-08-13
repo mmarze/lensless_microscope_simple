@@ -29,6 +29,8 @@ import ids_peak_ipl.ids_peak_ipl as ids_ipl
 import ids_peak.ids_peak_ipl_extension as ids_ipl_extension
 import sys
 from datetime import datetime
+from time import sleep
+import os
 
 
 def open_camera():
@@ -184,15 +186,17 @@ def start_acquisition(data_stream, remote_device_node_map):
         return False
 
 
-def acquire_and_save(remote_device_node_map, data_stream):
+def acquire_and_save(remote_device_node_map, data_stream, filepath="C:\\Users\\marcinmarzejon\\"):
     try:
+        if not os.path.exists(filepath):
+            os.mkdir(filepath)
         remote_device_node_map.FindNode("TriggerSoftware").Execute()
         buffer = data_stream.WaitForFinishedBuffer(2000)
         # convert to Mono image
         raw_image = ids_ipl_extension.BufferToImage(buffer)
         mono_image = raw_image.ConvertTo(ids_ipl.PixelFormatName_Mono12)
         data_stream.QueueBuffer(buffer)
-        filename = "C:\\Users\\marcinmarzejon\\" + str(datetime.now().strftime("%d-%m-%Y_%H-%M-%S")) + ".png"
+        filename = filepath + str(datetime.now().strftime("%d-%m-%Y_%H-%M-%S")) + ".png"
         ids_ipl.ImageWriter.Write(filename, mono_image)
         return True
     except Exception as e:
@@ -216,14 +220,14 @@ def main():
         # get exposure time
         print(f'Exposure time: {get_exposure_time(my_remote_device_node_map)}')
         # set exposure time
-        # set_exposure_time(my_remote_device_node_map, 6000)
+        set_exposure_time(my_remote_device_node_map, 15000.34)
         
         # ADC Gain Correction
         set_adc_gain_correction(my_remote_device_node_map, True)
         # get gain value
         print(f'Gain: {get_gain(my_remote_device_node_map)}')
         # set gain to 1.0
-        # set_gain(my_remote_device_node_map, 1.0)
+        set_gain(my_remote_device_node_map, 1.0)
         
         # get fps
         print(f'FPS: {get_fps(my_remote_device_node_map)}')
@@ -245,8 +249,10 @@ def main():
             sys.exit(-4)
         
         # # acquire and save an image
-        if not acquire_and_save(my_remote_device_node_map, my_data_stream):
-            sys.exit(-5)
+        for i in range(5):
+            if not acquire_and_save(my_remote_device_node_map, my_data_stream):
+                sys.exit(-5)
+            sleep(1)
                
         # close device
         my_device = None

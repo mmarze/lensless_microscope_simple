@@ -32,8 +32,8 @@ if __name__ == '__main__':
 
     # STEPPER MOTOR - positions
     step = 0.8/1000
-    N = 31
-    SM_init_pos = 0.0
+    N = 100
+    SM_init_pos = 5.0
 
     try:
         # DEVICES INIT
@@ -51,7 +51,7 @@ if __name__ == '__main__':
         # set default parameters - binning, flipping etc
         set_default_parameters(my_remote_device_node_map)
         # set exposure time
-        set_exposure_time(my_remote_device_node_map, 6000)
+        set_exposure_time(my_remote_device_node_map, 16004.38)
         # set gain to 1.0
         set_gain(my_remote_device_node_map, 1.0)
         # set Trigger parameters
@@ -71,7 +71,7 @@ if __name__ == '__main__':
             kdc101_get_curr_pos(MyStage, True)
             time.sleep(1)
             # acquire and save an image
-            if not acquire_and_save(my_remote_device_node_map, my_data_stream):
+            if not acquire_and_save(my_remote_device_node_map, my_data_stream,  "C:\\Users\\marcinmarzejon\\Documents\\experiment1-2\\"):
                 sys.exit(-5)
 
         # CLOSE DEVICES -----------------------------
