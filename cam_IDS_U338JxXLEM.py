@@ -34,6 +34,7 @@ import os
 
 
 def open_camera():
+    """This functions opens the camera and returns a tuple with a flag, device object and device nodemap object."""
     try:
         # Create a DeviceManager object
         device_manager = ids_peak.DeviceManager.Instance()
@@ -62,6 +63,9 @@ def open_camera():
     
 
 def set_default_parameters(remote_device_node_map):
+    """This function set a default parameters for my experiments: no axis reverse, no binning,  and 'Mono12g24IDS' pixel format.
+    :param remote_device_node_map: nodemap for the device
+    """
     # set ReverseX to false
     remote_device_node_map.FindNode("ReverseX").SetValue(False)
     # set ReverseY to false
@@ -77,6 +81,9 @@ def set_default_parameters(remote_device_node_map):
         
 
 def get_exposure_params(remote_device_node_map):
+    """This function reads the camera exposure parameters: minimum exposure time, maximum exposure time and exposure
+time interval. If failure to read, the exposure time is -1.
+    :param remote_device_node_map: nodemap for the device"""
     # exposure time - get settings
     min_exposure_time = -1
     max_exposure_time = -1
@@ -93,21 +100,33 @@ def get_exposure_params(remote_device_node_map):
 
 
 def get_exposure_time(remote_device_node_map):
+    """This function reads the camera exposure time.
+    :param remote_device_node_map: nodemap for the device
+    :return: camera exposure time"""
     return remote_device_node_map.FindNode("ExposureTime").Value()
 
 
 def set_exposure_time(remote_device_node_map, exposure_time):
+    """This function sets the camera exposure time.
+    :param remote_device_node_map: nodemap for the device
+    :param exposure_time: exposure time to set"""
     remote_device_node_map.FindNode("ExposureTime").SetValue(exposure_time)
     print(f"Exposure time set to {get_exposure_time(remote_device_node_map)}")
 
 
 def get_gain(remote_device_node_map):
+    """This function reads the camera gain.
+    :param remote_device_node_map: nodemap for the device
+    :return: gamera gain value"""
     # Set GainSelector to "AnalogAll" (str)
     remote_device_node_map.FindNode("GainSelector").SetCurrentEntry("AnalogAll")
     return remote_device_node_map.FindNode("Gain").Value()
 
 
 def set_gain(remote_device_node_map, gain_val):
+    """This function sets the camera gain.
+    :param remote_device_node_map: nodemap for the device
+    :param gain_val: gain value to set"""
     # Set GainSelector to "AnalogAll" (str)
     remote_device_node_map.FindNode("GainSelector").SetCurrentEntry("AnalogAll")
     remote_device_node_map.FindNode("Gain").SetValue(gain_val)
@@ -115,6 +134,9 @@ def set_gain(remote_device_node_map, gain_val):
     
 
 def set_adc_gain_correction(remote_device_node_map, value):
+    """This function sets the camera ADC gain correction (predefined gain correction value).
+    :param remote_device_node_map: nodemap for the device
+    :param value: value to set"""
     # Set GainSelector to "AnalogAll" (str)
     remote_device_node_map.FindNode("GainSelector").SetCurrentEntry("AnalogAll")
     # Set ADCGainCorrection value (bool)
@@ -122,22 +144,33 @@ def set_adc_gain_correction(remote_device_node_map, value):
 
 
 def get_fps(remote_device_node_map):
+    """This function sets the camera frame rate.
+    :param remote_device_node_map: nodemap for the device"""
     # Determine the current AcquisitionFrameRate (float)
     return remote_device_node_map.FindNode("AcquisitionFrameRate").Value()
 
 
 def set_fps(remote_device_node_map, fps_value):
+    """This function sets the camera frame rate.
+    :param remote_device_node_map: nodemap for the device
+    :param fps_value: frame rate value to set"""
     remote_device_node_map.FindNode("AcquisitionFrameRate").SetValue(fps_value)
     print(f'FPS set to {get_fps(remote_device_node_map)}')
 
 
 def set_trigger_parameters(remote_device_node_map):
+    """This function sets the camera trigger parameters - software trigger for acquisition of one frame only.
+    :param remote_device_node_map: nodemap for the device"""
     remote_device_node_map.FindNode("TriggerSelector").SetCurrentEntry("ReadOutStart")
     remote_device_node_map.FindNode("TriggerSource").SetCurrentEntry("Software")
     remote_device_node_map.FindNode("TriggerMode").SetCurrentEntry("On")
    
 
 def prepare_acquisition(device):
+    """This function prepares for camera acquisition - creates data streams and opens data stream. If unsuccessful,
+function returns flag value False and None as data_stream.
+    :param device: device object
+    :return: a tuple: (flag (True if successful), data stream - device.DataStreams() type)"""
     try:
         data_streams = device.DataStreams()
         if data_streams.empty():
@@ -151,6 +184,10 @@ def prepare_acquisition(device):
 
 
 def alloc_and_announce_buffers(data_stream, remote_device_node_map):
+    """This function allocates and announces buffers for data stream.
+    :param remote_device_node_map: nodemap for the device
+    :param data_stream: camera data streams -  device.DataStreams() type object
+    :return: flag (True if successful)"""
     try:
         # Flush queue and prepare all buffers for revoking
         data_stream.Flush(ids_peak.DataStreamFlushMode_DiscardAll)
@@ -174,10 +211,17 @@ def alloc_and_announce_buffers(data_stream, remote_device_node_map):
 
 
 def start_acquisition(data_stream, remote_device_node_map):
+    """This function starts the camera acquisition.
+    :param remote_device_node_map: nodemap for the device
+    :param data_stream: camera data streams -  device.DataStreams() type object
+    :return: flag (True if successful)"""
     try:
         data_stream.StartAcquisition()
         # (ids_peak.AcquisitionStartMode_Default, ids_peak.data_stream.INFINITE_NUMBER)
+        # Setting the "TLParamsLocked" parameter is necessary to lock all writable nodes in the XML tree that must not
+        # be modified during image acquisition.
         remote_device_node_map.FindNode("TLParamsLocked").SetValue(1)
+        # start of the acquisition
         remote_device_node_map.FindNode("AcquisitionStart").Execute()
         remote_device_node_map.FindNode("AcquisitionStart").WaitUntilDone()
         return True
@@ -186,7 +230,12 @@ def start_acquisition(data_stream, remote_device_node_map):
         return False
 
 
-def acquire_and_save(remote_device_node_map, data_stream, filepath="C:\\Users\\marcinmarzejon\\"):
+def acquire_and_save(remote_device_node_map, data_stream, filepath="C:\\Users\\"):
+    """This function acquires the image (trigger release) and saves to file.
+    :param remote_device_node_map: nodemap for the device
+    :param filepath: string with filepath to a folder where data will be saved; default = "C:\\Users\\"
+    :param data_stream: camera data streams -  device.DataStreams() type object
+    :return: flag (True if successful)"""
     try:
         if not os.path.exists(filepath):
             os.mkdir(filepath)
@@ -207,9 +256,7 @@ def acquire_and_save(remote_device_node_map, data_stream, filepath="C:\\Users\\m
 def main():
     # init library
     ids_peak.Library.Initialize()
-    # # Create a DeviceManager object
-    # device_manager = ids_peak.DeviceManager.Instance()
-    
+
     try:
         # open camera
         status, my_device, my_remote_device_node_map = open_camera()
@@ -256,7 +303,6 @@ def main():
                
         # close device
         my_device = None
-        del my_device
 
     except Exception as e:
         print("\nEXCEPTION: " + str(e))
